@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:studybuddy_client/services/auth_service.dart';
@@ -21,6 +22,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  StreamSubscription<bool>? _loadingSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadingSubscription = _authService.isLoadingStream.listen((loading) {
+      if (mounted) setState(() => _isLoading = loading);
+    });
+  }
+
+  @override
+  void dispose() {
+    _loadingSubscription?.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);

@@ -1,11 +1,20 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService {
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _initialized = false;
+  final _loadingController =
+      StreamController<bool>.broadcast(); // Added StreamController
+  Stream<bool> get isLoadingStream =>
+      _loadingController.stream; // Added getter for stream
 
   Future<void> initialize() async {
     if (!_initialized) {
@@ -21,6 +30,7 @@ class AuthService {
         _googleSignIn.authenticationEvents.listen((event) async {
           print("AuthService: Received authentication event: $event");
           if (event is GoogleSignInAuthenticationEventSignIn) {
+            _loadingController.add(true); // Added loading start
             try {
               final account = event.user;
               final googleAuth = account.authentication;
@@ -35,6 +45,8 @@ class AuthService {
               await _auth.signInWithCredential(credential);
             } catch (e) {
               print("Error during automatic Firebase sign-in: $e");
+            } finally {
+              _loadingController.add(false); // Added loading end
             }
           }
         });
