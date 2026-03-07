@@ -1,0 +1,70 @@
+name: Build Multi-Platform Apps
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Build APK
+        run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: studybuddy-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Enable Windows Build
+        run: flutter config --enable-windows-desktop
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Build Windows
+        run: flutter build windows --release
+      - name: Archive Windows Build
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath studybuddy-windows.zip
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: studybuddy-windows-exe
+          path: studybuddy-windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Enable macOS Build
+        run: flutter config --enable-macos-desktop
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Build macOS
+        run: flutter build macos --release
+      - name: Create DMG
+        run: |
+          # Simple script to create a DMG if possible, or just zip the .app
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../studybuddy-macos.zip *.app
+      - name: Upload macOS DMG (Zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: studybuddy-macos-app
+          path: studybuddy-macos.zip

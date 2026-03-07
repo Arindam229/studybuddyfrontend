@@ -52,16 +52,25 @@ class AuthService {
     try {
       await _ensureInitialized();
 
+      if (defaultTargetPlatform == TargetPlatform.windows) {
+        print(
+          "AuthService: Google Sign-In is not currently supported on Windows Desktop by the official plugin.",
+        );
+        // In a real app, you might use a webview or custom OAuth flow here.
+        return null;
+      }
+
       // Trigger the authentication flow
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate(
-        scopeHint: ['email'],
-      );
+      // On macOS and Android/iOS, this uses the native SDKs
+      final GoogleSignInAccount? googleUser = await _googleSignIn
+          .authenticate();
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      if (googleUser == null) return null;
 
-      // On Android, we should also get the access token if needed for other services,
-      // but for Firebase, idToken is often enough.
-      // However, to be safe and match the web flow's success:
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Get the access token via authorizationClient for newer Identity Services
       final authClient = googleUser.authorizationClient;
       final authz = await authClient.authorizationForScopes(['email']);
 
@@ -72,7 +81,7 @@ class AuthService {
 
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      print("Error during Google Sign In: $e");
+      print("Error during Google Sign In ($defaultTargetPlatform): $e");
       return null;
     }
   }
