@@ -4,21 +4,26 @@
 FLUTTER_VERSION="stable"
 FLUTTER_CHANNEL="stable"
 
+# Exit on error
+set -e
+
 # 1. Download Flutter SDK
 echo "--- Downloading Flutter SDK ($FLUTTER_VERSION) ---"
-git clone https://github.com/flutter/flutter.git -b $FLUTTER_VERSION --depth 1
+if [ ! -d "flutter" ]; then
+  git clone https://github.com/flutter/flutter.git -b $FLUTTER_VERSION --depth 1
+fi
 
-# 2. Add Flutter to PATH
-export PATH="$PATH:`pwd`/flutter/bin"
+# 2. Add Flutter to PATH (Prepend to avoid system version)
+export PATH="`pwd`/flutter/bin:$PATH"
 
-# 3. Pre-cache and Doctor (optional but helpful)
-flutter precache --web
+# 3. Initialize and check
+flutter config --enable-web
 flutter doctor
 
 # 4. Build the Web App
 echo "--- Building Flutter Web App ---"
-# Using --web-renderer html to reduce bundle size and speed up initial load.
-flutter build web --release --web-renderer html
+# Using equals sign for the flag and ensuring it uses the html renderer correctly.
+flutter build web --release --web-renderer=html
 
 # 5. Move output to a folder Vercel can find (optional, usually build/web is used)
 # Vercel's default output is 'public' or whatever you set in the dashboard.
