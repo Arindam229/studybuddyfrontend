@@ -1,4 +1,5 @@
 name: Build Multi-Platform Apps
+# Forced re-trigger comment
 
 on:
   push:
