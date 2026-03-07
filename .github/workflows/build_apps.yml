@@ -58,13 +58,21 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
       - name: Build macOS
-        run: flutter build macos --release
-      - name: Create DMG
         run: |
-          # Simple script to create a DMG if possible, or just zip the .app
-          cd build/macos/Build/Products/Release
-          zip -r ../../../../studybuddy-macos.zip *.app
-      - name: Upload macOS DMG (Zip)
+          flutter build macos --release --no-codesign
+      - name: Find and Zip Artifacts
+        run: |
+          echo "--- Locating .app bundle ---"
+          find build/macos/Build/Products/Release -name "*.app" -maxdepth 2
+          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 2 | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: Could not find .app bundle in build directory."
+            ls -R build/macos
+            exit 1
+          fi
+          echo "Found app at: $APP_PATH"
+          zip -r studybuddy-macos.zip "$APP_PATH"
+      - name: Upload macOS App (Zip)
         uses: actions/upload-artifact@v4
         with:
           name: studybuddy-macos-app
