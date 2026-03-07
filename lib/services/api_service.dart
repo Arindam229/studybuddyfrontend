@@ -7,7 +7,8 @@ class ApiService {
   // Use --dart-define=API_URL=https://your-api.vercel.app/api during build
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://10.81.4.230:3000/api',
+    defaultValue:
+        'https://studybuddybackend-dmbadabedrdyfqcw.southeastasia-01.azurewebsites.net/api',
   );
   static final AuthService _authService = AuthService();
 
