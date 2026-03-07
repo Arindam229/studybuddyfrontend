@@ -17,9 +17,8 @@ flutter doctor
 
 # 4. Build the Web App
 echo "--- Building Flutter Web App ---"
-# Note: The API_URL is now set as the default in api_service.dart, 
-# but you can still override it here if needed.
-flutter build web --release
+# Using --web-renderer html to reduce bundle size and speed up initial load.
+flutter build web --release --web-renderer html
 
 # 5. Move output to a folder Vercel can find (optional, usually build/web is used)
 # Vercel's default output is 'public' or whatever you set in the dashboard.
