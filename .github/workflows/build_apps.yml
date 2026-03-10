@@ -84,18 +84,20 @@ jobs:
             echo "Error: Could not find .app bundle."
             exit 1
           fi
-          create-dmg \
-            --volname "StudyBuddy Setup" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --icon "StudyBuddy.app" 200 190 \
-            --hide-extension "StudyBuddy.app" \
-            --app-drop-link 600 185 \
-            "StudyBuddy.dmg" \
-            "$APP_PATH" || true
+          echo "Found app at: $APP_PATH"
+          mkdir -p dmg_staging
+          cp -r "$APP_PATH" dmg_staging/
+          hdiutil create \
+            -volname "StudyBuddy" \
+            -srcfolder dmg_staging \
+            -ov \
+            -format UDZO \
+            "StudyBuddy.dmg"
+          echo "DMG created successfully:"
+          ls -lh StudyBuddy.dmg
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
           name: studybuddy-macos-dmg
           path: StudyBuddy.dmg
+          if-no-files-found: error
