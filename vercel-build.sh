@@ -27,7 +27,21 @@ fi
 echo "--- Flutter Version ---"
 $FLUTTER_BIN --version
 
-# 3. Initialize Web
+# 3. Handle Environment Variables (Vercel)
+echo "--- Injecting Environment Variables ---"
+if [ -f ".env.server" ]; then
+  echo ".env.server found. Prioritizing it for build..."
+  cp .env.server .env
+  echo "Successfully copied .env.server to .env."
+elif [ -n "$API_URL" ]; then
+  echo "Generating .env from Vercel API_URL secret..."
+  echo "API_URL=$API_URL" > .env
+  echo "Successfully generated .env."
+else
+  echo "WARNING: Neither .env.server nor API_URL secret found. Build might use defaults."
+fi
+
+# 4. Initialize Web
 echo "--- Initializing Web ---"
 $FLUTTER_BIN config --enable-web
 $FLUTTER_BIN precache --web
