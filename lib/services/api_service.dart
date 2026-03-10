@@ -22,23 +22,24 @@ class ApiService {
     };
   }
 
-  static Future<Map<String, dynamic>> uploadImage(XFile image) async {
+  static Future<Map<String, dynamic>> uploadFile(
+    List<int> bytes,
+    String filename,
+  ) async {
     try {
       final url = '$baseUrl/upload';
-      print('[API DEBUG] Uploading to: $url');
+      print('[API DEBUG] Uploading file to: $url');
       var request = http.MultipartRequest('POST', Uri.parse(url));
 
-      // Add Authorization header to the multipart request
       final token = await _authService.getIdToken();
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      var bytes = await image.readAsBytes();
       var multipartFile = http.MultipartFile.fromBytes(
-        'image',
+        'image', // Backend still expects 'image' field for now
         bytes,
-        filename: image.name,
+        filename: filename,
       );
 
       request.files.add(multipartFile);
@@ -49,11 +50,15 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(responseBody);
       } else {
-        throw Exception('Failed to upload image: ${response.statusCode}');
+        throw Exception('Failed to upload file: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error uploading image: $e');
+      throw Exception('Error uploading file: $e');
     }
+  }
+
+  static Future<Map<String, dynamic>> uploadImage(XFile image) async {
+    return uploadFile(await image.readAsBytes(), image.name);
   }
 
   static Future<Map<String, dynamic>> uploadChatImage(XFile image) async {

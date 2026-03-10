@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:studybuddy_client/services/api_service.dart';
 import 'package:studybuddy_client/screens/history_screen.dart';
 import 'package:studybuddy_client/screens/result_screen.dart';
@@ -18,6 +20,48 @@ class _UploadScreenState extends State<UploadScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
 
+  Future<void> _handleFileSelection() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      setState(() => _isUploading = true);
+
+      // Create a dummy XFile-like object for ApiService (it just needs bytes and name)
+      // Or we can update ApiService to accept bytes and name directly.
+      // For now, let's use a simple wrapper or update ApiService.
+
+      final response = await ApiService.uploadFile(
+        file.bytes ?? await File(file.path!).readAsBytes(),
+        file.name,
+      );
+
+      if (response['success'] && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultScreen(data: response['data']),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Upload failed: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
   Future<void> _handleUpload(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(source: source);
@@ -25,7 +69,10 @@ class _UploadScreenState extends State<UploadScreen> {
 
       setState(() => _isUploading = true);
 
-      final response = await ApiService.uploadImage(image);
+      final response = await ApiService.uploadFile(
+        await image.readAsBytes(),
+        image.name,
+      );
 
       if (response['success'] && mounted) {
         Navigator.push(
@@ -184,10 +231,11 @@ class _UploadScreenState extends State<UploadScreen> {
                                     ),
                                     const SizedBox(height: 16),
                                     OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _handleUpload(ImageSource.gallery),
-                                      icon: const Icon(Icons.photo_library),
-                                      label: const Text('Upload from Gallery'),
+                                      onPressed: _handleFileSelection,
+                                      icon: const Icon(
+                                        Icons.file_upload_outlined,
+                                      ),
+                                      label: const Text('Upload File'),
                                       style: OutlinedButton.styleFrom(
                                         minimumSize: const Size(200, 56),
                                       ),

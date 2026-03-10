@@ -154,99 +154,144 @@ class _FlowchartWidgetState extends State<FlowchartWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isEditable = widget.isEditable;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
+    // Update orientation based on device
+    builder.orientation = isMobile
+        ? BuchheimWalkerConfiguration.ORIENTATION_TOP_BOTTOM
+        : BuchheimWalkerConfiguration.ORIENTATION_LEFT_RIGHT;
+
+    builder.siblingSeparation = (isMobile ? 40 : 80);
+    builder.levelSeparation = (isMobile ? 60 : 100);
 
     return ClipRect(
-      child: Stack(
-        children: [
-          // Background Dots
-          Positioned.fill(
-            child: CustomPaint(
-              painter: GridPainter(
-                gridColor: theme.brightness == Brightness.dark
-                    ? Colors.white.withValues(alpha: 0.04)
-                    : Colors.grey.withValues(alpha: 0.08),
+      child: Container(
+        color: theme.scaffoldBackgroundColor,
+        child: Stack(
+          children: [
+            // Background Dots
+            Positioned.fill(
+              child: CustomPaint(
+                painter: GridPainter(
+                  gridColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                ),
               ),
             ),
-          ),
-          InteractiveViewer(
-            transformationController: _transformationController,
-            constrained: false,
-            boundaryMargin: isEditable
-                ? const EdgeInsets.all(2000)
-                : const EdgeInsets.all(100),
-            minScale: 0.1,
-            maxScale: 2.0,
-            scaleEnabled: true,
-            panEnabled: true,
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 80),
-              child: GraphView(
-                key: _graphKey,
-                graph: graph,
-                algorithm: _algorithm,
-                paint: Paint()
-                  ..color = theme.colorScheme.primary.withValues(alpha: 0.35)
-                  ..strokeWidth = 2.0
-                  ..style = PaintingStyle.stroke,
-                builder: (Node node) {
-                  final id = node.key!.value.toString();
-                  final nodeData = _nodes.firstWhere(
-                    (n) => n['id'].toString() == id,
-                    orElse: () => {},
-                  );
-                  if (nodeData.isEmpty) return const SizedBox();
+            InteractiveViewer(
+              transformationController: _transformationController,
+              constrained: false,
+              boundaryMargin: isEditable
+                  ? const EdgeInsets.all(2000)
+                  : const EdgeInsets.all(400),
+              minScale: 0.05,
+              maxScale: 2.5,
+              scaleEnabled: true,
+              panEnabled: true,
+              child: Container(
+                alignment: Alignment.center,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 40 : 120,
+                  vertical: isMobile ? 60 : 100,
+                ),
+                child: GraphView(
+                  key: _graphKey,
+                  graph: graph,
+                  algorithm: _algorithm,
+                  paint: Paint()
+                    ..color = isDark
+                        ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                        : theme.colorScheme.primary.withValues(alpha: 0.4)
+                    ..strokeWidth = 2.0
+                    ..style = PaintingStyle.stroke,
+                  builder: (Node node) {
+                    final id = node.key!.value.toString();
+                    final nodeData = _nodes.firstWhere(
+                      (n) => n['id'].toString() == id,
+                      orElse: () => {},
+                    );
+                    if (nodeData.isEmpty) return const SizedBox();
 
-                  final label = nodeData['label'] ?? '';
-                  final colorValue = nodeData['color'];
-                  final color = colorValue is int
-                      ? Color(colorValue)
-                      : theme.colorScheme.primaryContainer;
+                    final label = nodeData['label'] ?? '';
+                    final colorValue = nodeData['color'];
 
-                  return _buildNode(id, label, color, theme, node);
-                },
+                    Color nodeBackground;
+                    if (colorValue is int) {
+                      nodeBackground = Color(colorValue);
+                    } else {
+                      nodeBackground = isDark
+                          ? theme.colorScheme.secondaryContainer
+                          : theme.colorScheme.primaryContainer;
+                    }
+
+                    return _buildNode(
+                      id,
+                      label,
+                      nodeBackground,
+                      theme,
+                      node,
+                      isDark,
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          // Tool Buttons
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (widget.showCustomizeButton && !isEditable)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: FloatingActionButton.extended(
-                      heroTag: 'customize_flowchart_fab',
-                      onPressed: _openEditor,
-                      icon: const Icon(Icons.auto_fix_high_rounded),
-                      label: const Text("Customize"),
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
+            // Tool Buttons
+            Positioned(
+              right: isMobile ? 12 : 24,
+              bottom: isMobile ? 12 : 24,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (widget.showCustomizeButton && !isEditable)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: FloatingActionButton.extended(
+                        heroTag: 'customize_flowchart_fab',
+                        onPressed: _openEditor,
+                        icon: const Icon(Icons.auto_fix_high_rounded),
+                        label: const Text("Customize"),
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        elevation: 6,
+                      ),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildToolButton(Icons.zoom_in, _zoomIn, "Zoom In"),
+                        _buildToolButton(Icons.zoom_out, _zoomOut, "Zoom Out"),
+                        _buildToolButton(
+                          Icons.center_focus_strong,
+                          _resetZoom,
+                          "Reset",
+                        ),
+                      ],
                     ),
                   ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildToolButton(Icons.zoom_in, _zoomIn, "Zoom In"),
-                    const SizedBox(width: 8),
-                    _buildToolButton(Icons.zoom_out, _zoomOut, "Zoom Out"),
-                    const SizedBox(width: 8),
-                    _buildToolButton(
-                      Icons.center_focus_strong,
-                      _resetZoom,
-                      "Reset",
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -257,20 +302,12 @@ class _FlowchartWidgetState extends State<FlowchartWidget> {
     String tooltip,
   ) {
     final theme = Theme.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: theme.cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
-        elevation: 4,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            child: Icon(icon, size: 22, color: theme.colorScheme.primary),
-          ),
-        ),
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20, color: theme.colorScheme.primary),
+      style: IconButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -281,30 +318,52 @@ class _FlowchartWidgetState extends State<FlowchartWidget> {
     Color color,
     ThemeData theme,
     Node node,
+    bool isDark,
   ) {
+    // Determine contrast color
+    final textColor = color.computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
+
     return Container(
-      constraints: const BoxConstraints(maxWidth: 160, minWidth: 80),
+      constraints: const BoxConstraints(maxWidth: 180, minWidth: 90),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.08),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.black.withValues(alpha: 0.08),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+            color: isDark ? Colors.black45 : Colors.black12,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            // Potential for node-specific actions
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: textColor,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -317,10 +376,12 @@ class GridPainter extends CustomPainter {
   GridPainter({required this.gridColor, this.spacing = 30.0});
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = gridColor;
+    final paint = Paint()
+      ..color = gridColor
+      ..strokeCap = StrokeCap.round;
     for (double i = 0; i < size.width; i += spacing) {
       for (double j = 0; j < size.height; j += spacing) {
-        canvas.drawCircle(Offset(i, j), 0.8, paint);
+        canvas.drawCircle(Offset(i, j), 1.0, paint);
       }
     }
   }
