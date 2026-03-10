@@ -81,138 +81,231 @@ class CustomNavbar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final themeService = ThemeService();
 
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
-        border: Border(bottom: BorderSide(color: theme.dividerColor)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Logo Section
-          GestureDetector(
-            onTap: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const UploadScreen()),
-                (route) => false,
-              );
-            },
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.auto_stories,
-                    color: theme.colorScheme.onPrimary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'StudyBuddy',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Action Section
-          ListenableBuilder(
-            listenable: themeService,
-            builder: (context, _) {
-              return Row(
+    return SafeArea(
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+          border: Border(bottom: BorderSide(color: theme.dividerColor)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Logo Section
+            GestureDetector(
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UploadScreen()),
+                  (route) => false,
+                );
+              },
+              child: Row(
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      themeService.isDarkMode
-                          ? Icons.light_mode_outlined
-                          : Icons.dark_mode_outlined,
-                      color: theme.colorScheme.onSurface,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    onPressed: () => themeService.toggleTheme(),
-                    tooltip: 'Toggle Theme',
+                    child: Icon(
+                      Icons.auto_stories,
+                      color: theme.colorScheme.onPrimary,
+                      size: 20,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  StreamBuilder(
-                    stream: AuthService().authStateChanges,
-                    initialData: AuthService().currentUser,
-                    builder: (context, snapshot) {
-                      if (AuthService().currentUser == null) {
-                        return const SizedBox.shrink();
-                      }
-
-                      return Row(
-                        children: [
-                          TextButton.icon(
-                            onPressed: () => _showJoinMeetDialog(context),
-                            icon: const Icon(Icons.meeting_room, size: 18),
-                            label: const Text('Join Meet'),
-                          ),
-                          const SizedBox(width: 8),
-                          TextButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const HistoryScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.history, size: 18),
-                            label: const Text('My History'),
-                          ),
-                          const SizedBox(width: 8),
-                          TextButton(
-                            onPressed: () async {
-                              try {
-                                await ApiService.clearHistory();
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('History cleared.'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e')),
-                                  );
-                                }
-                              }
-                            },
-                            child: const Text(
-                              'Clear Chat',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          TextButton(
-                            onPressed: () async {
-                              await AuthService().signOut();
-                              await browser_reload.reloadPage();
-                            },
-                            child: const Text('Sign Out'),
-                          ),
-                        ],
-                      );
-                    },
+                  const SizedBox(width: 12),
+                  Text(
+                    'StudyBuddy',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ],
-              );
-            },
-          ),
-        ],
+              ),
+            ),
+
+            // Action Section
+            ListenableBuilder(
+              listenable: themeService,
+              builder: (context, _) {
+                final isMobile = MediaQuery.of(context).size.width < 600;
+
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        themeService.isDarkMode
+                            ? Icons.light_mode_outlined
+                            : Icons.dark_mode_outlined,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      onPressed: () => themeService.toggleTheme(),
+                      tooltip: 'Toggle Theme',
+                    ),
+                    const SizedBox(width: 8),
+                    StreamBuilder(
+                      stream: AuthService().authStateChanges,
+                      initialData: AuthService().currentUser,
+                      builder: (context, snapshot) {
+                        if (AuthService().currentUser == null) {
+                          return const SizedBox.shrink();
+                        }
+
+                        if (isMobile) {
+                          return PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert),
+                            onSelected: (value) async {
+                              switch (value) {
+                                case 'meet':
+                                  _showJoinMeetDialog(context);
+                                  break;
+                                case 'history':
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const HistoryScreen(),
+                                    ),
+                                  );
+                                  break;
+                                case 'clear':
+                                  try {
+                                    await ApiService.clearHistory();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('History cleared.'),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                  break;
+                                case 'signout':
+                                  await AuthService().signOut();
+                                  await browser_reload.reloadPage();
+                                  break;
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'meet',
+                                child: ListTile(
+                                  leading: Icon(Icons.meeting_room),
+                                  title: Text('Join Meet'),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'history',
+                                child: ListTile(
+                                  leading: Icon(Icons.history),
+                                  title: Text('My History'),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'clear',
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.red,
+                                  ),
+                                  title: Text(
+                                    'Clear Chat',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                              const PopupMenuDivider(),
+                              const PopupMenuItem(
+                                value: 'signout',
+                                child: ListTile(
+                                  leading: Icon(Icons.logout),
+                                  title: Text('Sign Out'),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => _showJoinMeetDialog(context),
+                              icon: const Icon(Icons.meeting_room, size: 18),
+                              label: const Text('Join Meet'),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const HistoryScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.history, size: 18),
+                              label: const Text('My History'),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton(
+                              onPressed: () async {
+                                try {
+                                  await ApiService.clearHistory();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('History cleared.'),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                              child: const Text(
+                                'Clear Chat',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton(
+                              onPressed: () async {
+                                await AuthService().signOut();
+                                await browser_reload.reloadPage();
+                              },
+                              child: const Text('Sign Out'),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

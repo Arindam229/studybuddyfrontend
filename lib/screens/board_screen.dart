@@ -387,40 +387,108 @@ class _BoardScreenState extends State<BoardScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Stack(
-        children: [
-          // Main Content Layer
-          Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 800;
+          return Stack(
             children: [
-              _buildTabSelector(),
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(child: _buildMainContent()),
-                    if (_localUserJoined || _remoteUids.isNotEmpty)
-                      _buildVideoSidebar(),
-                  ],
-                ),
+              // Main Content Layer
+              Column(
+                children: [
+                  _buildTabSelector(),
+                  Expanded(
+                    child: isMobile
+                        ? Column(
+                            children: [
+                              Expanded(child: _buildMainContent()),
+                              if (_localUserJoined || _remoteUids.isNotEmpty)
+                                SizedBox(
+                                  height: 120,
+                                  child: _buildVideoMobileStrip(),
+                                ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(child: _buildMainContent()),
+                              if (_localUserJoined || _remoteUids.isNotEmpty)
+                                _buildVideoSidebar(),
+                            ],
+                          ),
+                  ),
+                ],
               ),
+
+              // Control Toolbar (Google Meet Style)
+              Positioned(
+                bottom: isMobile ? 12 : 24,
+                left: 0,
+                right: 0,
+                child: _buildMeetControls(isMobile),
+              ),
+
+              // Meeting Info Overlay
+              if (_showMeetingInfo) _buildMeetingInfoOverlay(),
+
+              // People Overlay
+              if (_showPeople) _buildPeopleOverlay(),
+
+              // Reactions Layer
+              ..._reactions.map((r) => _buildFloatingReaction(r)),
             ],
-          ),
+          );
+        },
+      ),
+    );
+  }
 
-          // Control Toolbar (Google Meet Style)
+  Widget _buildVideoMobileStrip() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF202124),
+        border: Border(top: BorderSide(color: Colors.white10, width: 1)),
+      ),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        children: [
+          _videoCardMobile("You", _localVideo()),
+          ..._remoteUids.map(
+            (uid) => _videoCardMobile("Guest $uid", _remoteVideo(uid)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _videoCardMobile(String label, Widget video) {
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white24, width: 1),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        children: [
+          video,
           Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: _buildMeetControls(),
+            left: 4,
+            bottom: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontSize: 8),
+              ),
+            ),
           ),
-
-          // Meeting Info Overlay
-          if (_showMeetingInfo) _buildMeetingInfoOverlay(),
-
-          // People Overlay
-          if (_showPeople) _buildPeopleOverlay(),
-
-          // Reactions Layer
-          ..._reactions.map((r) => _buildFloatingReaction(r)),
         ],
       ),
     );
@@ -984,10 +1052,13 @@ class _BoardScreenState extends State<BoardScreen> {
     );
   }
 
-  Widget _buildMeetControls() {
+  Widget _buildMeetControls(bool isMobile) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
+      padding: EdgeInsets.symmetric(
+        vertical: isMobile ? 8 : 12,
+        horizontal: isMobile ? 12 : 16,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF202124),
         borderRadius: BorderRadius.circular(40),
@@ -1011,8 +1082,9 @@ class _BoardScreenState extends State<BoardScreen> {
               setState(() => _muted = !_muted);
               _engine?.muteLocalAudioStream(_muted);
             },
+            isMobile: isMobile,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 8 : 12),
           _meetButton(
             _videoDisabled ? Icons.videocam_off : Icons.videocam,
             _videoDisabled ? Colors.redAccent : Colors.white,
@@ -1023,8 +1095,9 @@ class _BoardScreenState extends State<BoardScreen> {
               setState(() => _videoDisabled = !_videoDisabled);
               _engine?.enableLocalVideo(!_videoDisabled);
             },
+            isMobile: isMobile,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 8 : 12),
           _meetButton(
             Icons.info_outline,
             _showMeetingInfo ? Colors.cyanAccent : Colors.white,
@@ -1032,15 +1105,17 @@ class _BoardScreenState extends State<BoardScreen> {
                 ? Colors.cyanAccent.withOpacity(0.2)
                 : Colors.transparent,
             () => setState(() => _showMeetingInfo = !_showMeetingInfo),
+            isMobile: isMobile,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 8 : 12),
           _meetButton(
             Icons.add_reaction_outlined,
             Colors.white,
             Colors.transparent,
             _showReactionPicker,
+            isMobile: isMobile,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 8 : 12),
           _meetButton(
             Icons.people_outline,
             _showPeople ? Colors.cyanAccent : Colors.white,
@@ -1048,14 +1123,16 @@ class _BoardScreenState extends State<BoardScreen> {
                 ? Colors.cyanAccent.withOpacity(0.2)
                 : Colors.transparent,
             () => setState(() => _showPeople = !_showPeople),
+            isMobile: isMobile,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 8 : 12),
           _meetButton(
             Icons.call_end,
             Colors.white,
             Colors.redAccent,
             () => Navigator.pop(context),
             isEnd: true,
+            isMobile: isMobile,
           ),
         ],
       ),
@@ -1177,6 +1254,7 @@ class _BoardScreenState extends State<BoardScreen> {
     Color bgColor,
     VoidCallback onTap, {
     bool isEnd = false,
+    bool isMobile = false,
   }) {
     return Material(
       color: bgColor,
@@ -1185,16 +1263,16 @@ class _BoardScreenState extends State<BoardScreen> {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          width: 44,
-          height: 44,
-          padding: const EdgeInsets.all(10),
+          width: isMobile ? 36 : 44,
+          height: isMobile ? 36 : 44,
+          padding: EdgeInsets.all(isMobile ? 8 : 10),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: isEnd
                 ? null
                 : Border.all(color: Colors.white24, width: 0.5),
           ),
-          child: Icon(icon, color: color, size: 22),
+          child: Icon(icon, color: color, size: isMobile ? 18 : 22),
         ),
       ),
     );

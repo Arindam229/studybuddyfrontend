@@ -18,9 +18,9 @@ class _UploadScreenState extends State<UploadScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
 
-  Future<void> _handleUpload() async {
+  Future<void> _handleUpload(ImageSource source) async {
     try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+      final XFile? image = await _picker.pickImage(source: source);
       if (image == null) return;
 
       setState(() => _isUploading = true);
@@ -140,7 +140,11 @@ class _UploadScreenState extends State<UploadScreen> {
                       // Upload Card
                       Card(
                         child: Padding(
-                          padding: const EdgeInsets.all(48.0),
+                          padding: EdgeInsets.all(
+                            MediaQuery.of(context).size.width < 600
+                                ? 24.0
+                                : 48.0,
+                          ),
                           child: Column(
                             children: [
                               Container(
@@ -167,13 +171,28 @@ class _UploadScreenState extends State<UploadScreen> {
                                   ],
                                 )
                               else
-                                ElevatedButton.icon(
-                                  onPressed: _handleUpload,
-                                  icon: const Icon(Icons.camera_enhance),
-                                  label: const Text('Capture Notes'),
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(200, 56),
-                                  ),
+                                Column(
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () =>
+                                          _handleUpload(ImageSource.camera),
+                                      icon: const Icon(Icons.camera_enhance),
+                                      label: const Text('Capture Notes'),
+                                      style: ElevatedButton.styleFrom(
+                                        minimumSize: const Size(200, 56),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    OutlinedButton.icon(
+                                      onPressed: () =>
+                                          _handleUpload(ImageSource.gallery),
+                                      icon: const Icon(Icons.photo_library),
+                                      label: const Text('Upload from Gallery'),
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size(200, 56),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               const SizedBox(height: 16),
                               if (!_isUploading)
