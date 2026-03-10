@@ -29,17 +29,24 @@ $FLUTTER_BIN --version
 
 # 3. Handle Environment Variables (Vercel)
 echo "--- Injecting Environment Variables ---"
+# Check Priority: 1. .env.server, 2. Vercel secret, 3. .env.example fallback, 4. empty file
 if [ -f ".env.server" ]; then
-  echo ".env.server found. Prioritizing it for build..."
+  echo ".env.server found. Using it for build..."
   cp .env.server .env
-  echo "Successfully copied .env.server to .env."
 elif [ -n "$API_URL" ]; then
   echo "Generating .env from Vercel API_URL secret..."
   echo "API_URL=$API_URL" > .env
-  echo "Successfully generated .env."
+elif [ -f ".env.example" ]; then
+  echo "WARNING: No .env.server or secret found. Falling back to .env.example..."
+  cp .env.example .env
 else
-  echo "WARNING: Neither .env.server nor API_URL secret found. Build might use defaults."
+  echo "WARNING: No environment variables found. Creating empty .env to prevent build error."
+  touch .env
 fi
+
+echo "--- Verified .env Content ---"
+ls -l .env
+cat .env
 
 # 4. Initialize Web
 echo "--- Initializing Web ---"
