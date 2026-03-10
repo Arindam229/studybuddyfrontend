@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
-Widget renderGoogleSignInButton({required VoidCallback onPressed}) {
+Widget renderGoogleSignInButton({
+  required VoidCallback onPressed,
+  bool isDarkMode = false,
+}) {
   return OutlinedButton.icon(
     icon: const Icon(Icons.login),
     label: const Text('Sign in with Google'),

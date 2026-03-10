@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:studybuddy_client/theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:studybuddy_client/screens/chat_screen.dart';
 import 'package:studybuddy_client/screens/login_screen.dart';
 import 'package:studybuddy_client/screens/upload_screen.dart';
 
 import 'package:studybuddy_client/services/auth_service.dart';
+import 'package:studybuddy_client/services/theme_service.dart';
+import 'package:studybuddy_client/widgets/animated_background.dart';
 import 'package:studybuddy_client/firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   // Initialize Firebase with the generated configurations for the current platform
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -24,28 +28,34 @@ class StudyBuddyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'StudyBuddy AI',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[50],
-        useMaterial3: true,
-      ),
-      debugShowCheckedModeBanner: false,
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasData) {
-            return const UploadScreen();
-          }
-          return const LoginScreen();
-        },
-      ),
+    return ListenableBuilder(
+      listenable: ThemeService(),
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'StudyBuddy AI',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeService().themeMode,
+          debugShowCheckedModeBanner: false,
+          builder: (context, child) {
+            return AnimatedGradientBackground(child: child!);
+          },
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasData) {
+                return const UploadScreen();
+              }
+              return const LoginScreen();
+            },
+          ),
+        );
+      },
     );
   }
 }

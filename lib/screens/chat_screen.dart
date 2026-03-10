@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:studybuddy_client/services/api_service.dart';
-import 'package:studybuddy_client/services/auth_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? initialMessage;
@@ -15,10 +14,17 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
-  final AuthService _authService = AuthService();
 
   List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
+  String? _currentScreenshotText;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -36,12 +42,17 @@ class _ChatScreenState extends State<ChatScreen> {
       if (historyData['success']) {
         setState(() {
           _messages = List<Map<String, dynamic>>.from(
-            historyData['history'].map(
-              (item) => {
-                'text': item['text'],
-                'isUser': item['role'] == 'user',
-              },
-            ),
+            historyData['history'].map((item) {
+              final textRaw = item['text'];
+              String text;
+              if (textRaw is List) {
+                text = textRaw.join('\n');
+              } else {
+                text = textRaw?.toString() ?? '';
+              }
+
+              return {'text': text, 'isUser': item['role'] == 'user'};
+            }),
           );
         });
         _scrollToBottom();
@@ -59,6 +70,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _messageController.clear();
 
+    final screenshotContext = _currentScreenshotText;
+    _currentScreenshotText = null; // Use once then clear to avoid confusion
+
     setState(() {
       _messages.add({'text': messageText, 'isUser': true});
       _isLoading = true;
@@ -66,10 +80,20 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
 
     try {
-      final response = await ApiService.sendChat(messageText);
+      final response = await ApiService.sendChat(
+        messageText,
+        screenshotText: screenshotContext,
+      );
       if (response['success']) {
         setState(() {
-          _messages.add({'text': response['reply'], 'isUser': false});
+          final replyRaw = response['reply'];
+          String reply;
+          if (replyRaw is List) {
+            reply = replyRaw.join('\n');
+          } else {
+            reply = replyRaw?.toString() ?? 'Empty reply';
+          }
+          _messages.add({'text': reply, 'isUser': false});
         });
         _scrollToBottom();
       }
@@ -80,11 +104,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _handleImageUpload() async {
+  Future<void> _uploadImage() async {
     try {
-      // Pick an image from the camera (can be gallery on desktop/web if camera is unavailable)
       final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-
       if (image == null) return;
 
       setState(() {
@@ -97,16 +119,21 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToBottom();
 
-      final response = await ApiService.uploadImage(image);
+      final response = await ApiService.uploadChatImage(image);
 
       setState(() {
-        // Remove the placeholder message
         _messages.removeWhere((msg) => msg['isImagePlaceholder'] == true);
-
         if (response['success']) {
+          final extracted = response['data']['extractedText'];
+          if (extracted is List) {
+            _currentScreenshotText = extracted.join('\n');
+          } else {
+            _currentScreenshotText = extracted?.toString();
+          }
+
           _messages.add({
             'text':
-                "Image scanned. Extracted Text:\n\n${response['data']['extractedText']}",
+                "Image scanned. You can now ask questions about this screenshot!",
             'isUser': false,
           });
         }
@@ -135,26 +162,50 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _clearHistory() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await ApiService.clearHistory();
+      if (response['success']) {
+        setState(() {
+          _messages.clear();
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chat history cleared.')),
+          );
+        }
+      }
+    } catch (e) {
+      _showError("Failed to clear history: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('StudyBuddy AI'),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
+        title: const Text('Chat'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await _authService.signOut();
-            },
-            tooltip: 'Sign Out',
+          TextButton.icon(
+            onPressed: _clearHistory,
+            icon: const Icon(Icons.delete_outline, size: 20),
+            label: const Text('Clear Chat'),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -162,109 +213,107 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isUser = message['isUser'] as bool;
+                try {
+                  final message = _messages[index];
+                  final isUser = message['isUser'] == true;
 
-                return Align(
-                  alignment: isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12.0),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isUser ? Colors.blueAccent : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(20).copyWith(
-                        bottomRight: isUser
-                            ? const Radius.circular(0)
-                            : const Radius.circular(20),
-                        bottomLeft: isUser
-                            ? const Radius.circular(20)
-                            : const Radius.circular(0),
+                  return Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: Align(
+                        alignment: isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isUser
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.secondary,
+                            borderRadius: BorderRadius.circular(12).copyWith(
+                              bottomRight: isUser
+                                  ? const Radius.circular(0)
+                                  : const Radius.circular(12),
+                              bottomLeft: isUser
+                                  ? const Radius.circular(12)
+                                  : const Radius.circular(0),
+                            ),
+                          ),
+                          child: Text(
+                            (message['text'] ?? '').toString(),
+                            style: TextStyle(
+                              color: isUser
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSecondary,
+                              fontSize: 15,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                  );
+                } catch (e) {
+                  return const ListTile(
+                    title: Text(
+                      'Error rendering message',
+                      style: TextStyle(color: Colors.red),
                     ),
-                    child: Text(
-                      message['text'] as String,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        color: isUser ? Colors.white : Colors.black87,
-                        fontSize: 16.0,
-                      ),
-                    ),
-                  ),
-                );
+                  );
+                }
               },
             ),
           ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
-            ),
-          _buildMessageInput(),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            offset: const Offset(0, -2),
-            blurRadius: 10,
+          if (_isLoading) const LinearProgressIndicator(),
+
+          // Input Area
+          Container(
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              border: Border(top: BorderSide(color: theme.dividerColor)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      onPressed: _uploadImage,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: const InputDecoration(
+                          hintText: 'Type your question...',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                        ),
+                        onSubmitted: (_) => _handleSendMessage(),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: _handleSendMessage,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.camera_alt, color: Colors.blueAccent),
-              onPressed: _handleImageUpload,
-            ),
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: 'Ask a question...',
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 12.0,
-                  ),
-                ),
-                onSubmitted: (_) => _handleSendMessage(),
-              ),
-            ),
-            const SizedBox(width: 8.0),
-            CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: _handleSendMessage,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

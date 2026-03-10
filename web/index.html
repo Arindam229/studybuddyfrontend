@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,20 +19,39 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="StudyBuddy AI - Your personal AI-powered study assistant.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="studybuddy_client">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
+  <meta name="apple-mobile-web-app-title" content="StudyBuddy AI">
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png?v=2" />
+  <link rel="shortcut icon" type="image/png" href="favicon.png?v=2" />
+  <link rel="apple-touch-icon" href="icons/Icon-192.png?v=2">
 
-  <title>studybuddy_client</title>
+  <title>StudyBuddy AI</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Agora Web SDK (matching the bridge script version) -->
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+  <!-- Local Iris Bridge (downloaded to fix TypeError: createIrisApiEngine) -->
+  <script src="iris-web-rtc.js"></script>
+  <script>
+    // Critical fix: Ensure Iris engine is correctly mapped
+    (function () {
+      var checkIris = function () {
+        if (window.IrisWebRtc || window.IrisWebRtc_N) {
+          window.IrisWebRtc = window.IrisWebRtc || window.IrisWebRtc_N;
+          console.log("[AGORA FIX] Iris bridge initialized locally");
+        } else {
+          setTimeout(checkIris, 100);
+        }
+      };
+      checkIris();
+    })();
+  </script>
 </head>
+
 <body>
   <!--
     You can customize the "flutter_bootstrap.js" script.
@@ -43,4 +63,5 @@
   -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
+
 </html>

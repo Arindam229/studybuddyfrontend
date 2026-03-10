@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:studybuddy_client/services/auth_service.dart';
+import 'package:studybuddy_client/widgets/custom_footer.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -52,103 +53,97 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: const Text('Create Account'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Join StudyBuddy',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Start your intelligent learning journey today.',
-                  style: TextStyle(color: Colors.black54),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) => (value == null || !value.contains('@'))
-                      ? 'Enter a valid email'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
-                  validator: (value) => (value == null || value.length < 6)
-                      ? 'Password must be at least 6 characters'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: const Icon(Icons.lock_reset),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
-                  validator: (value) => value != _passwordController.text
-                      ? 'Passwords do not match'
-                      : null,
-                ),
-                const SizedBox(height: 32),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: _handleRegister,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              constraints: const BoxConstraints(minHeight: 600),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Join StudyBuddy',
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(fontSize: 28, letterSpacing: -1),
+                          textAlign: TextAlign.center,
                         ),
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Start your intelligent learning journey today.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                      ),
-              ],
+                        const SizedBox(height: 48),
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) =>
+                              (value == null || !value.contains('@'))
+                              ? 'Enter a valid email'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ),
+                          obscureText: _obscurePassword,
+                          validator: (value) =>
+                              (value == null || value.length < 6)
+                              ? 'Password must be at least 6 characters'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          decoration: const InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: Icon(Icons.lock_reset),
+                          ),
+                          obscureText: _obscurePassword,
+                          validator: (value) =>
+                              value != _passwordController.text
+                              ? 'Passwords do not match'
+                              : null,
+                        ),
+                        const SizedBox(height: 32),
+                        _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : ElevatedButton(
+                                onPressed: _handleRegister,
+                                child: const Text('Sign Up'),
+                              ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
+            const CustomFooter(),
+          ],
         ),
       ),
     );

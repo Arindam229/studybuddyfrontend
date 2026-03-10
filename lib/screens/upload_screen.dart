@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:studybuddy_client/services/api_service.dart';
+import 'package:studybuddy_client/screens/history_screen.dart';
 import 'package:studybuddy_client/screens/result_screen.dart';
-import 'package:studybuddy_client/services/auth_service.dart';
+
+import 'package:studybuddy_client/widgets/custom_footer.dart';
+import 'package:studybuddy_client/widgets/custom_navbar.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -13,7 +16,6 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   final ImagePicker _picker = ImagePicker();
-  final AuthService _authService = AuthService();
   bool _isUploading = false;
 
   Future<void> _handleUpload() async {
@@ -29,11 +31,7 @@ class _UploadScreenState extends State<UploadScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ResultScreen(
-              summary: response['data']['summary'],
-              audioUrl: response['data']['audioUrl'],
-              extractedText: response['data']['extractedText'],
-            ),
+            builder: (context) => ResultScreen(data: response['data']),
           ),
         );
       }
@@ -53,63 +51,147 @@ class _UploadScreenState extends State<UploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('StudyBuddy'),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _authService.signOut(),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.cloud_upload_outlined,
-                size: 120,
-                color: Colors.blueAccent,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Upload your notes',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Capture or select an image of your study materials to get an AI-powered explanation.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.black54),
-              ),
-              const SizedBox(height: 48),
-              if (_isUploading)
-                const CircularProgressIndicator()
-              else
-                ElevatedButton.icon(
-                  onPressed: _handleUpload,
-                  icon: const Icon(Icons.camera_enhance),
-                  label: const Text('Upload Notes'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+      appBar: const CustomNavbar(),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              constraints: const BoxConstraints(minHeight: 600),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Hero Section
+                      Text(
+                        'Process your study notes',
+                        style: Theme.of(context).textTheme.displayLarge
+                            ?.copyWith(fontSize: 36, letterSpacing: -1.5),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () async {
+                          try {
+                            await ApiService.clearHistory();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Chat history cleared!'),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
+                        label: const Text(
+                          'Clear Chat History',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HistoryScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.history),
+                        label: const Text('View All My History'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Upload or capture an image of your study materials to get an AI-powered explanation and summary.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+
+                      // Upload Card
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(48.0),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.cloud_upload_outlined,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              if (_isUploading)
+                                const Column(
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 16),
+                                    Text('Analyzing your notes...'),
+                                  ],
+                                )
+                              else
+                                ElevatedButton.icon(
+                                  onPressed: _handleUpload,
+                                  icon: const Icon(Icons.camera_enhance),
+                                  label: const Text('Capture Notes'),
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(200, 56),
+                                  ),
+                                ),
+                              const SizedBox(height: 16),
+                              if (!_isUploading)
+                                Text(
+                                  'Supports JPG, PNG, and PDF (scanned)',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
+              ),
+            ),
+            const CustomFooter(),
+          ],
         ),
       ),
     );

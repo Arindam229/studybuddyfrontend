@@ -1,35 +1,22 @@
 {
-    "name": "studybuddy_client",
-    "short_name": "studybuddy_client",
+    "name": "StudyBuddy AI",
+    "short_name": "StudyBuddy",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": false,
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "description": "Your personal AI-powered study assistant.",
+    "orientation": "portrait",
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "favicon.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-512.png",
+            "src": "favicon.png",
             "sizes": "512x512",
             "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
         }
     ]
 }

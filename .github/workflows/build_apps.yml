@@ -37,14 +37,16 @@ jobs:
         run: flutter pub get
       - name: Build Windows
         run: flutter build windows --release
-      - name: Archive Windows Build
+      - name: Create Windows Installer (Inno Setup)
+        shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath studybuddy-windows.zip
-      - name: Upload Windows EXE
+          mkdir build\windows\installer
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\StudyBuddy.iss
+      - name: Upload Windows Setup EXE
         uses: actions/upload-artifact@v4
         with:
-          name: studybuddy-windows-exe
-          path: studybuddy-windows.zip
+          name: studybuddy-windows-setup
+          path: build\windows\installer\StudyBuddySetup.exe
 
   build-macos:
     runs-on: macos-latest
@@ -58,26 +60,32 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
       - name: Build macOS
-        run: |
-          flutter build macos --release
+        run: flutter build macos --release
         env:
           CODE_SIGN_IDENTITY: ""
           CODE_SIGNING_REQUIRED: "NO"
           CODE_SIGNING_ALLOWED: "NO"
-      - name: Find and Zip Artifacts
+      - name: Install create-dmg
+        run: brew install create-dmg
+      - name: Create macOS DMG
         run: |
-          echo "--- Locating .app bundle ---"
-          find build/macos/Build/Products/Release -name "*.app" -maxdepth 2
           APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 2 | head -n 1)
           if [ -z "$APP_PATH" ]; then
-            echo "Error: Could not find .app bundle in build directory."
-            ls -R build/macos
+            echo "Error: Could not find .app bundle."
             exit 1
           fi
-          echo "Found app at: $APP_PATH"
-          zip -r studybuddy-macos.zip "$APP_PATH"
-      - name: Upload macOS App (Zip)
+          create-dmg \
+            --volname "StudyBuddy Setup" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "StudyBuddy.app" 200 190 \
+            --hide-extension "StudyBuddy.app" \
+            --app-drop-link 600 185 \
+            "StudyBuddy.dmg" \
+            "$APP_PATH"
+      - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
-          name: studybuddy-macos-app
-          path: studybuddy-macos.zip
+          name: studybuddy-macos-dmg
+          path: StudyBuddy.dmg

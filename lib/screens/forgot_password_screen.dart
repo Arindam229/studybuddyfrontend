@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:studybuddy_client/services/auth_service.dart';
+import 'package:studybuddy_client/widgets/custom_footer.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -46,62 +47,61 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         title: const Text('Reset Password'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Forgot Password?',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Enter your email address and we will send you a link to reset your password.',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
-              ),
-              const SizedBox(height: 32),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              constraints: const BoxConstraints(minHeight: 600),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Forgot Password?',
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(fontSize: 28, letterSpacing: -1),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Enter your email address and we will send you a link to reset your password.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 48),
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) =>
+                              (value == null || !value.contains('@'))
+                              ? 'Enter a valid email'
+                              : null,
+                        ),
+                        const SizedBox(height: 32),
+                        _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : ElevatedButton(
+                                onPressed: _handleResetPassword,
+                                child: const Text('Send Reset Link'),
+                              ),
+                      ],
+                    ),
                   ),
                 ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) => (value == null || !value.contains('@'))
-                    ? 'Enter a valid email'
-                    : null,
               ),
-              const SizedBox(height: 32),
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _handleResetPassword,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text(
-                        'Send Reset Link',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-            ],
-          ),
+            ),
+            const CustomFooter(),
+          ],
         ),
       ),
     );

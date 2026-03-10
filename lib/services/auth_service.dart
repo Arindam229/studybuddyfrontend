@@ -26,9 +26,11 @@ class AuthService {
       _initialized = true;
 
       if (kIsWeb) {
-        print("AuthService: Setting up authenticationEvents listener for Web.");
+        debugPrint(
+          "AuthService: Setting up authenticationEvents listener for Web.",
+        );
         _googleSignIn.authenticationEvents.listen((event) async {
-          print("AuthService: Received authentication event: $event");
+          debugPrint("AuthService: Received authentication event: $event");
           if (event is GoogleSignInAuthenticationEventSignIn) {
             _loadingController.add(true); // Added loading start
             try {
@@ -44,7 +46,7 @@ class AuthService {
               );
               await _auth.signInWithCredential(credential);
             } catch (e) {
-              print("Error during automatic Firebase sign-in: $e");
+              debugPrint("Error during automatic Firebase sign-in: $e");
             } finally {
               _loadingController.add(false); // Added loading end
             }
@@ -65,7 +67,7 @@ class AuthService {
       await _ensureInitialized();
 
       if (defaultTargetPlatform == TargetPlatform.windows) {
-        print(
+        debugPrint(
           "AuthService: Google Sign-In is not currently supported on Windows Desktop by the official plugin.",
         );
         // In a real app, you might use a webview or custom OAuth flow here.
@@ -79,8 +81,7 @@ class AuthService {
 
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       // Get the access token via authorizationClient for newer Identity Services
       final authClient = googleUser.authorizationClient;
@@ -93,7 +94,7 @@ class AuthService {
 
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      print("Error during Google Sign In ($defaultTargetPlatform): $e");
+      debugPrint("Error during Google Sign In ($defaultTargetPlatform): $e");
       return null;
     }
   }
@@ -114,7 +115,7 @@ class AuthService {
         password: password,
       );
     } catch (e) {
-      print("Error during Email Registration: $e");
+      debugPrint("Error during Email Registration: $e");
       rethrow;
     }
   }
@@ -126,7 +127,7 @@ class AuthService {
         password: password,
       );
     } catch (e) {
-      print("Error during Email Sign In: $e");
+      debugPrint("Error during Email Sign In: $e");
       rethrow;
     }
   }
@@ -135,7 +136,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } catch (e) {
-      print("Error during Password Reset Email: $e");
+      debugPrint("Error during Password Reset Email: $e");
       rethrow;
     }
   }
