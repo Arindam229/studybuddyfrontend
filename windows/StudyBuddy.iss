@@ -35,4 +35,4 @@ Name: "{group}\Study Buddy"; Filename: "{app}\studybuddy_client.exe"
 Name: "{autodesktop}\Study Buddy"; Filename: "{app}\studybuddy_client.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\studybuddy_client.exe"; Description: "{cm:LaunchProgram,Study Buddy}"; Flags: nowait postinstall skipfsentry
+Filename: "{app}\studybuddy_client.exe"; Description: "{cm:LaunchProgram,Study Buddy}"; Flags: nowait postinstall
