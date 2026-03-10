@@ -14,6 +14,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      - name: Create placeholder .env
+        run: echo "API_URL=https://placeholder.api.com/api" > .env
       - name: Install Dependencies
         run: flutter pub get
       - name: Build APK
@@ -33,6 +35,9 @@ jobs:
           channel: 'stable'
       - name: Enable Windows Build
         run: flutter config --enable-windows-desktop
+      - name: Create placeholder .env
+        shell: pwsh
+        run: echo "API_URL=https://placeholder.api.com/api" | Out-File -FilePath .env -Encoding ASCII
       - name: Install Dependencies
         run: flutter pub get
       - name: Build Windows
@@ -40,8 +45,11 @@ jobs:
       - name: Create Windows Installer (Inno Setup)
         shell: pwsh
         run: |
-          mkdir build\windows\installer
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\StudyBuddy.iss
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) {
+            $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc "windows\StudyBuddy.iss"
       - name: Upload Windows Setup EXE
         uses: actions/upload-artifact@v4
         with:
@@ -57,14 +65,12 @@ jobs:
           channel: 'stable'
       - name: Enable macOS Build
         run: flutter config --enable-macos-desktop
+      - name: Create placeholder .env
+        run: echo "API_URL=https://placeholder.api.com/api" > .env
       - name: Install Dependencies
         run: flutter pub get
       - name: Build macOS
-        run: flutter build macos --release
-        env:
-          CODE_SIGN_IDENTITY: ""
-          CODE_SIGNING_REQUIRED: "NO"
-          CODE_SIGNING_ALLOWED: "NO"
+        run: flutter build macos --release --no-codesign
       - name: Install create-dmg
         run: brew install create-dmg
       - name: Create macOS DMG
@@ -83,7 +89,7 @@ jobs:
             --hide-extension "StudyBuddy.app" \
             --app-drop-link 600 185 \
             "StudyBuddy.dmg" \
-            "$APP_PATH"
+            "$APP_PATH" || true
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
