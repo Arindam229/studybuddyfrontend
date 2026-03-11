@@ -13,12 +13,27 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
-  // Initialize Firebase with the generated configurations for the current platform
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Ensure Google Sign-In is initialized before the UI builds (avoids "Bad state" on Web)
-  await AuthService().initialize();
+  debugPrint("Main: Starting application initialization...");
+
+  try {
+    await dotenv.load(fileName: ".env");
+    debugPrint("Main: .env loaded.");
+
+    // Initialize Firebase with the generated configurations for the current platform
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint("Main: Firebase initialized.");
+
+    // Ensure Google Sign-In is initialized before the UI builds (avoids "Bad state" on Web)
+    // On Windows/Linux, AuthService.initialize() now handles skipping unsupported sign-in.
+    await AuthService().initialize();
+    debugPrint("Main: AuthService initialized.");
+  } catch (e) {
+    debugPrint("Main: Critical error during initialization: $e");
+    // We continue so the app at least opens, though some features might fail.
+  }
 
   runApp(const StudyBuddyApp());
 }

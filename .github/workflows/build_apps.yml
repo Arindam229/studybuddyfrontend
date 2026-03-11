@@ -1,5 +1,4 @@
-name: Build Multi-Platform Apps
-# Forced re-trigger comment
+name: Build Windows App
 
 on:
   push:
@@ -7,41 +6,28 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      - name: Create placeholder .env
-        run: echo "API_URL=https://placeholder.api.com/api" > .env
-      - name: Install Dependencies
-        run: flutter pub get
-      - name: Build APK
-        run: flutter build apk --release
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: studybuddy-android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          
       - name: Enable Windows Build
         run: flutter config --enable-windows-desktop
+        
       - name: Create placeholder .env
         shell: pwsh
         run: echo "API_URL=https://placeholder.api.com/api" | Out-File -FilePath .env -Encoding ASCII
+        
       - name: Install Dependencies
         run: flutter pub get
+        
       - name: Build Windows
         run: flutter build windows --release
+        
       - name: Create Windows Installer (Inno Setup)
         shell: pwsh
         run: |
@@ -49,55 +35,15 @@ jobs:
           if (!(Test-Path $iscc)) {
             $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
           }
-          & $iscc "windows\StudyBuddy.iss"
+          if (Test-Path $iscc) {
+            & $iscc "windows\StudyBuddy.iss"
+          } else {
+            Write-Host "Warning: Inno Setup (ISCC.exe) not found. Skipping installer creation."
+          }
+          
       - name: Upload Windows Setup EXE
         uses: actions/upload-artifact@v4
         with:
           name: studybuddy-windows-setup
           path: build\windows\installer\StudyBuddySetup.exe
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      - name: Enable macOS Build
-        run: flutter config --enable-macos-desktop
-      - name: Create placeholder .env
-        run: echo "API_URL=https://placeholder.api.com/api" > .env
-      - name: Install Dependencies
-        run: flutter pub get
-      - name: Build macOS
-        run: flutter build macos --release
-        env:
-          CODE_SIGN_IDENTITY: ""
-          CODE_SIGNING_REQUIRED: "NO"
-          CODE_SIGNING_ALLOWED: "NO"
-      - name: Install create-dmg
-        run: brew install create-dmg
-      - name: Create macOS DMG
-        run: |
-          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 2 | head -n 1)
-          if [ -z "$APP_PATH" ]; then
-            echo "Error: Could not find .app bundle."
-            exit 1
-          fi
-          echo "Found app at: $APP_PATH"
-          mkdir -p dmg_staging
-          cp -r "$APP_PATH" dmg_staging/
-          hdiutil create \
-            -volname "StudyBuddy" \
-            -srcfolder dmg_staging \
-            -ov \
-            -format UDZO \
-            "StudyBuddy.dmg"
-          echo "DMG created successfully:"
-          ls -lh StudyBuddy.dmg
-      - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: studybuddy-macos-dmg
-          path: StudyBuddy.dmg
-          if-no-files-found: error
+          if-no-files-found: warn

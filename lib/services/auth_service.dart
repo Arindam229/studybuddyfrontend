@@ -18,11 +18,17 @@ class AuthService {
 
   Future<void> initialize() async {
     if (!_initialized) {
-      await _googleSignIn.initialize(
-        clientId: kIsWeb
-            ? '847710015802-or4fqdgap6lq45cl3461vf0gqiq72bof.apps.googleusercontent.com'
-            : null,
-      );
+      // The google_sign_in plugin currently does not support Windows or Linux.
+      // Initializing it on these platforms might cause hangs or errors.
+      if (kIsWeb ||
+          (defaultTargetPlatform != TargetPlatform.windows &&
+              defaultTargetPlatform != TargetPlatform.linux)) {
+        await _googleSignIn.initialize(
+          clientId: kIsWeb
+              ? '847710015802-or4fqdgap6lq45cl3461vf0gqiq72bof.apps.googleusercontent.com'
+              : null,
+        );
+      }
       _initialized = true;
 
       if (kIsWeb) {
